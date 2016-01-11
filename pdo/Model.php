@@ -1,5 +1,10 @@
 <?php
 
+class ModelException extends Exception
+{
+
+}
+
 class Model
 {
     private $pdo;
@@ -16,19 +21,15 @@ class Model
 
     }*/
 
-
-    private $_where;
-
-
     private $_sql;
-
 
     /**
      * 拼接SQL
+     * select {field} from {table} where {where} order by {order} limit {limit}
      */
     private function _selectSql()
     {
-
+        $this->sql = 'SELECT ';
     }
 
     private function _insertSql()
@@ -104,11 +105,6 @@ class Model
 
     }
 
-    public function table()
-    {
-
-    }
-
     public function count()
     {
 
@@ -116,24 +112,78 @@ class Model
 
     /**
      * 条件
+     * 链式调用，多次调用
      */
-    public function where()
+
+    /**
+     * 多次调用，为替换
+     */
+    private $_table;
+
+    public function table($table)
+    {
+        $this->_table = $table;
+        return $this;
+    }
+
+    private $_where;
+    private $_where_param = array();
+
+    /**
+     * @param $condition
+     * @param $param
+     * @return $this
+     *
+     * $user->where('id = ?',$id);
+     * $user->where('id = 1')
+     * where之间是and连接
+     * 直接拼接为where字符串，更好一些
+     */
+    public function where($condition, $param)
+    {
+        if ($this->_where) {
+            $this->_where .= ' AND ';
+        }
+        $this->_where .= " ($condition) ";
+
+        if (isset($param)) {
+            if (!is_array($param)) {
+                $param = array($param);
+            }
+            $this->_where_param[] = $param;
+        }
+
+        return $this;
+    }
+
+    private $_limit;
+
+    public function limit($start, $offset)
+    {
+        if (!is_int($start)) {
+            throw new ModelException();
+        }
+        if (!isset($offset)) {
+            $this->_limit = " LIMIT $start";
+        } else {
+            if (!is_int($offset)) {
+                throw new ModelException();
+            }
+            $this->_limit = " LIMIT $start,$offset ";
+        }
+        return $this;
+    }
+
+    private $_order;
+    private $_order_param;
+
+    public function order($condition, $param)
     {
 
         return $this;
     }
 
-    public function limit()
-    {
-
-        return $this;
-    }
-
-    public function order()
-    {
-
-        return $this;
-    }
+    private $field;
 
     public function field()
     {
@@ -159,3 +209,4 @@ class Model
  * 7 通用接口，返回值如何确定
  *
  */
+
